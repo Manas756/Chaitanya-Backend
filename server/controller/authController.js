@@ -1,3 +1,4 @@
+const generateOTP = require("../utils/generateOTP");
 const OTP = require("../models/OTP");
 const User = require("../models/user");
 const bcrypt = require("bcryptjs");
@@ -22,17 +23,15 @@ exports.registerUser = async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, salt);
 
         // Generate OTP
-        const otp = Math.floor(
-            100000 + Math.random() * 900000
-        ).toString();
+        const otp = generateOTP();
 
         console.log(`OTP for ${email}: ${otp}`);
 
           // Save OTP to database so it can be verified later
          await OTP.create({
-  email,
-  otp,
-  action: "account_verify",
+      email,
+     otp,
+     action: "account_verify",
           });
 
         // Create user
