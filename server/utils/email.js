@@ -13,9 +13,9 @@ const transporter = nodeMailer.createTransport({
 
 exports.sendOTPEmail = async (email, otp, type, teamName) => {
     const mailOptions = {
-        from: `"Chaitaniya" <${process.env.EMAIL_USER}>`,
+        from: `"Chaitanya" <${process.env.EMAIL_USER}>`,
         to: email,
-        subject: "Your Chaitaniya OTP Code",
+        subject: "Your Chaitanya OTP Code",
 
         html: `
         <!DOCTYPE html>
@@ -23,7 +23,7 @@ exports.sendOTPEmail = async (email, otp, type, teamName) => {
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Chaitaniya OTP</title>
+            <title>Chaitanya OTP</title>
         </head>
 
         <body style="
@@ -60,7 +60,7 @@ exports.sendOTPEmail = async (email, otp, type, teamName) => {
                                     font-size: 28px;
                                     letter-spacing: 2px;
                                 ">
-                                    CHAITANIYA
+                                    CHAITANYA
                                 </h1>
 
                                 <p style="
@@ -95,7 +95,7 @@ exports.sendOTPEmail = async (email, otp, type, teamName) => {
                                     line-height: 1.6;
                                 ">
                                     Use the verification code below to
-                                    <strong>${type}</strong> on Chaitaniya.
+                                    <strong>${type}</strong> on Chaitanya.
                                 </p>
 
 
@@ -206,7 +206,7 @@ exports.sendOTPEmail = async (email, otp, type, teamName) => {
                                         line-height: 1.5;
                                     ">
                                         Your team has been successfully
-                                        registered for Chaitaniya.
+                                        registered for Chaitanya.
                                     </p>
 
                                 </div>
@@ -255,7 +255,7 @@ exports.sendOTPEmail = async (email, otp, type, teamName) => {
                                     color: #999999;
                                     font-size: 12px;
                                 ">
-                                    © ${new Date().getFullYear()} Chaitaniya
+                                    © ${new Date().getFullYear()} Chaitanya
                                 </p>
 
                             </td>

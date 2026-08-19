@@ -1,3 +1,4 @@
+const OTP = require("../models/OTP");
 const User = require("../models/user");
 const bcrypt = require("bcryptjs");
 const { sendOTPEmail } = require("../utils/email");
@@ -26,6 +27,13 @@ exports.registerUser = async (req, res) => {
         ).toString();
 
         console.log(`OTP for ${email}: ${otp}`);
+
+          // Save OTP to database so it can be verified later
+         await OTP.create({
+  email,
+  otp,
+  action: "account_verify",
+          });
 
         // Create user
         const user = new User({
@@ -81,9 +89,33 @@ exports.loginUser = async (req, res) => {
 exports.verifyOTP = async (req, res) => {
   try {
     const { email, otp } = req.body;
-    // TODO: look up stored OTP (e.g. from OTP model) and compare
-    // if valid, mark user as verified and respond
-    res.status(200).json({ message: "OTP verified" });
+    console.log("Looking for:", email, otp);
+const allOtps = await OTP.find({ email });
+console.log("Found OTP docs for this email:", allOtps);
+
+    if (!email || !otp) {
+      return res.status(400).json({ message: "Email and OTP are required" });
+    }
+
+    const otpRecord = await OTP.findOne({ email, otp, action: "account_verify" });
+
+    if (!otpRecord) {
+      return res.status(400).json({ message: "Invalid or expired OTP" });
+    }
+
+    const user = await User.findOneAndUpdate(
+      { email },
+      { isVerified: true },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    await OTP.deleteOne({ _id: otpRecord._id });
+
+    res.status(200).json({ message: "Email verified successfully" });
   } catch (err) {
     console.error("OTP verification error:", err);
     res.status(500).json({ message: "Error verifying OTP", error: err.message });
