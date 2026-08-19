@@ -59,3 +59,33 @@ exports.registerUser = async (req, res) => {
         });
     }
 };
+exports.loginUser = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ message: "Invalid email or password" });
+    }
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Invalid email or password" });
+    }
+    // TODO: generate and send token/session here
+    res.status(200).json({ message: "Login successful" });
+  } catch (err) {
+    console.error("Login error:", err);
+    res.status(500).json({ message: "Error logging in", error: err.message });
+  }
+};
+
+exports.verifyOTP = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    // TODO: look up stored OTP (e.g. from OTP model) and compare
+    // if valid, mark user as verified and respond
+    res.status(200).json({ message: "OTP verified" });
+  } catch (err) {
+    console.error("OTP verification error:", err);
+    res.status(500).json({ message: "Error verifying OTP", error: err.message });
+  }
+};
