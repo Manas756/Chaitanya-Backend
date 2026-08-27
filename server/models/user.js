@@ -8,27 +8,28 @@ const userSchema = new mongoose.Schema({
         type:String,
         required:true,
         unique:true,
+        lowercase:true,
+        trim:true,
+    },
+    googleId:{
+        type:String,
+        unique:true,
+        sparse:true,
     },
     password:{
         type:String,
         required:true,
     },
-    teamName:{
-        type:String,
-        required:true,
-        unique:true,
-        trim:true,
-    },
     role:{
         type:String,
-        enum:['user','admin'],
+        enum:['user','volunteer','organizer','admin','superadmin'],
         default:'user',
     },
     isVerified:{
         type:Boolean,
         default:false,
     }
-});
+}, { timestamps: true });
 
 const User = mongoose.model('User',userSchema);
 module.exports = User;

@@ -3,6 +3,13 @@ const dotenv = require("dotenv");
 
 dotenv.config();
 
+const escapeHtml = (value) => String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
 const transporter = nodeMailer.createTransport({
     service: "gmail",
     auth: {
@@ -12,6 +19,8 @@ const transporter = nodeMailer.createTransport({
 });
 
 exports.sendOTPEmail = async (email, otp, type, teamName) => {
+    const safeType = escapeHtml(type);
+    const safeTeamName = escapeHtml(teamName) || "Not provided";
     const mailOptions = {
         from: `"Chaitanya" <${process.env.EMAIL_USER}>`,
         to: email,
@@ -95,7 +104,7 @@ exports.sendOTPEmail = async (email, otp, type, teamName) => {
                                     line-height: 1.6;
                                 ">
                                     Use the verification code below to
-                                    <strong>${type}</strong> on Chaitanya.
+                                    <strong>${safeType}</strong> on Chaitanya.
                                 </p>
 
 
@@ -161,7 +170,7 @@ exports.sendOTPEmail = async (email, otp, type, teamName) => {
 
                                         Once your email is successfully
                                         verified, you can continue with your
-                                        <strong>${type}</strong> on Chaitaniya.
+                                        <strong>${safeType}</strong> on Chaitaniya.
 
                                     </p>
 
@@ -195,7 +204,7 @@ exports.sendOTPEmail = async (email, otp, type, teamName) => {
                                         font-size: 18px;
                                         font-weight: bold;
                                     ">
-                                        Team: ${teamName || "Not provided"}
+                                        Team: ${safeTeamName}
                                     </p>
 
 

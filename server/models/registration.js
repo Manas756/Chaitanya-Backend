@@ -1,16 +1,17 @@
-const express = require('express');
-const router = express.Router();
-const authMiddleware = require('../middleware/authMiddleware');
-const {
-  registerIndividual,
-  registerTeam,
-  getMyRegistrations,
-  cancelRegistration,
-} = require('../controller/registrationController');
+const mongoose = require("mongoose");
 
-router.post('/individual', authMiddleware, registerIndividual);
-router.post('/team', authMiddleware, registerTeam);
-router.get('/me', authMiddleware, getMyRegistrations);
-router.delete('/:id', authMiddleware, cancelRegistration);
+const registrationSchema = new mongoose.Schema({
+  event: { type: mongoose.Schema.Types.ObjectId, ref: "Event", required: true },
+  user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  type: { type: String, enum: ["individual", "team"], required: true },
+  team: { type: mongoose.Schema.Types.ObjectId, ref: "Team" },
+  teamName: { type: String, trim: true },
+  teamCode: { type: String, trim: true, uppercase: true },
+  members: [{ type: String, trim: true, lowercase: true }],
+  participantId: { type: String, required: true, unique: true },
+  status: { type: String, enum: ["confirmed", "cancelled"], default: "confirmed" },
+}, { timestamps: true });
 
-module.exports = router;
+registrationSchema.index({ event: 1, user: 1 }, { unique: true });
+
+module.exports = mongoose.model("Registration", registrationSchema);
