@@ -9,6 +9,14 @@ exports.registerUser = async (req, res) => {
 
         const { name, email, password, teamName } = req.body;
 
+        const normalizedTeamName = typeof teamName === "string" ? teamName.trim() : "";
+
+        if (!name || !email || !password || !normalizedTeamName) {
+          return res.status(400).json({
+            message: "Name, email, password, and team name are required"
+          });
+        }
+
         // Check if user already exists
         const existingUser = await User.findOne({ email });
 
@@ -18,14 +26,23 @@ exports.registerUser = async (req, res) => {
             });
         }
 
+          const escapedTeamName = normalizedTeamName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+          const existingTeam = await User.findOne({
+            teamName: { $regex: `^${escapedTeamName}$`, $options: "i" }
+          });
+
+          if (existingTeam) {
+            return res.status(400).json({
+              message: "Team name is already registered"
+            });
+          }
+
         // Hash password
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
         // Generate OTP
         const otp = generateOTP();
-
-        console.log(`OTP for ${email}: ${otp}`);
 
           // Save OTP to database so it can be verified later
          await OTP.create({
@@ -39,7 +56,7 @@ exports.registerUser = async (req, res) => {
             name,
             email,
             password: hashedPassword,
-            teamName
+            teamName: normalizedTeamName
         });
 
         await user.save();
@@ -60,9 +77,15 @@ exports.registerUser = async (req, res) => {
 
         console.error("Registration error:", err);
 
+        if (err.code === 11000 && err.keyPattern?.teamName) {
+          return res.status(400).json({
+            message: "Team name is already registered"
+          });
+        }
+
         res.status(400).json({
-            message: "Error registering user",
-            error: err.message
+          message: "Error registering user",
+          error: err.message
         });
     }
 };
