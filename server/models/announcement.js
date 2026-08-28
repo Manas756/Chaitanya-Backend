@@ -7,4 +7,6 @@ const announcementSchema = new mongoose.Schema({
   publishedAt: Date,
 }, { timestamps: true });
 
+announcementSchema.index({ published: 1, publishedAt: -1, createdAt: -1 });
+
 module.exports = mongoose.model("Announcement", announcementSchema);

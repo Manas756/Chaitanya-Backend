@@ -8,8 +8,10 @@ module.exports = (error, req, res, next) => {
     return res.status(400).json({ success: false, message: "Invalid resource identifier" });
   }
 
-  res.status(error.statusCode || 500).json({
+  const status = error.statusCode || 500;
+  res.status(status).json({
     success: false,
-    message: process.env.NODE_ENV === "production" ? "Internal server error" : error.message,
+    message: status >= 500 ? "Internal server error" : error.message,
+    error: status >= 500 ? "INTERNAL_ERROR" : "REQUEST_ERROR",
   });
 };

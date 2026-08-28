@@ -1,0 +1,62 @@
+{
+  "info": {
+    "name": "Chaitaniya Backend",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {"key":"baseUrl","value":"http://localhost:3000"},
+    {"key":"accessToken","value":""},
+    {"key":"adminToken","value":""},
+    {"key":"refreshToken","value":""},
+    {"key":"eventId","value":""},
+    {"key":"teamEventId","value":""},
+    {"key":"registrationId","value":""},
+    {"key":"announcementId","value":""},
+    {"key":"otp","value":""},
+    {"key":"resetOtp","value":""}
+  ],
+  "item": [
+    {"name":"Health","item":[{"name":"Health","request":{"method":"GET","url":{"raw":"{{baseUrl}}/health","host":["{{baseUrl}}"],"path":["health"]}}}]},
+    {"name":"Auth","item":[
+      {"name":"Register","request":{"method":"POST","header":[{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\"name\":\"Test User\",\"email\":\"your-email@example.com\",\"password\":\"Test@12345\"}"},"url":"{{baseUrl}}/api/auth/register"}},
+      {"name":"Verify OTP","request":{"method":"POST","header":[{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\"email\":\"your-email@example.com\",\"otp\":\"{{otp}}\"}"},"url":"{{baseUrl}}/api/auth/verify-otp"}},
+      {"name":"Login","request":{"method":"POST","header":[{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\"email\":\"your-email@example.com\",\"password\":\"Test@12345\"}"},"url":"{{baseUrl}}/api/auth/login"}},
+      {"name":"Forgot Password","request":{"method":"POST","body":{"mode":"raw","raw":"{\"email\":\"your-email@example.com\"}"},"url":"{{baseUrl}}/api/auth/forgot-password"}},
+      {"name":"Reset Password","request":{"method":"POST","body":{"mode":"raw","raw":"{\"email\":\"your-email@example.com\",\"otp\":\"{{resetOtp}}\",\"password\":\"NewTest@12345\"}"},"url":"{{baseUrl}}/api/auth/reset-password"}},
+      {"name":"Google Login","request":{"method":"POST","body":{"mode":"raw","raw":"{\"idToken\":\"paste-google-id-token\"}"},"url":"{{baseUrl}}/api/auth/google"}},
+      {"name":"Refresh","request":{"method":"POST","body":{"mode":"raw","raw":"{\"refreshToken\":\"{{refreshToken}}\"}"},"url":"{{baseUrl}}/api/auth/refresh"}},
+      {"name":"Logout","request":{"method":"POST","body":{"mode":"raw","raw":"{\"refreshToken\":\"{{refreshToken}}\"}"},"url":"{{baseUrl}}/api/auth/logout"}}
+    ]},
+    {"name":"Events","item":[
+      {"name":"List Events","request":{"method":"GET","url":"{{baseUrl}}/api/events?page=1&limit=20"}},
+      {"name":"Featured Events","request":{"method":"GET","url":"{{baseUrl}}/api/events?featured=true&page=1&limit=20"}},
+      {"name":"Get Event","request":{"method":"GET","url":"{{baseUrl}}/api/events/{{eventId}}"}},
+      {"name":"Create Event (Admin)","request":{"method":"POST","header":[{"key":"Authorization","value":"Bearer {{adminToken}}"}],"body":{"mode":"raw","raw":"{\"title\":\"Console Hackathon\",\"description\":\"Test event\",\"category\":\"hackathon\",\"capacity\":50,\"fee\":0,\"startsAt\":\"2026-09-01T09:00:00.000Z\",\"endsAt\":\"2026-09-01T17:00:00.000Z\",\"venue\":\"Main Hall\",\"status\":\"published\"}"},"url":"{{baseUrl}}/api/events"}},
+      {"name":"Update Event (Admin)","request":{"method":"PATCH","header":[{"key":"Authorization","value":"Bearer {{adminToken}}"}],"body":{"mode":"raw","raw":"{\"status\":\"published\"}"},"url":"{{baseUrl}}/api/events/{{eventId}}"}},
+      {"name":"Cancel Event (Admin)","request":{"method":"DELETE","header":[{"key":"Authorization","value":"Bearer {{adminToken}}"}],"url":"{{baseUrl}}/api/events/{{eventId}}"}}
+    ]},
+    {"name":"Registration","item":[
+      {"name":"Individual","request":{"method":"POST","header":[{"key":"Authorization","value":"Bearer {{accessToken}}"}],"body":{"mode":"raw","raw":"{\"eventId\":\"{{eventId}}\"}"},"url":"{{baseUrl}}/api/registration/individual"}},
+      {"name":"Create Team","request":{"method":"POST","header":[{"key":"Authorization","value":"Bearer {{accessToken}}"}],"body":{"mode":"raw","raw":"{\"eventId\":\"{{teamEventId}}\",\"teamName\":\"Console Team\"}"},"url":"{{baseUrl}}/api/registration/team/create"}},
+      {"name":"Join Team","request":{"method":"POST","header":[{"key":"Authorization","value":"Bearer {{accessToken}}"}],"body":{"mode":"raw","raw":"{\"eventId\":\"{{teamEventId}}\",\"teamCode\":\"ABC123\"}"},"url":"{{baseUrl}}/api/registration/team/join"}},
+      {"name":"My Registrations","request":{"method":"GET","header":[{"key":"Authorization","value":"Bearer {{accessToken}}"}],"url":"{{baseUrl}}/api/registration/me?page=1&limit=20"}},
+      {"name":"Cancel Registration","request":{"method":"DELETE","header":[{"key":"Authorization","value":"Bearer {{accessToken}}"}],"url":"{{baseUrl}}/api/registration/{{registrationId}}"}}
+    ]},
+    {"name":"Payments","item":[
+      {"name":"Create Order","request":{"method":"POST","header":[{"key":"Authorization","value":"Bearer {{accessToken}}"}],"body":{"mode":"raw","raw":"{\"registrationId\":\"{{registrationId}}\"}"},"url":"{{baseUrl}}/api/payments/orders"}},
+      {"name":"Verify Payment","request":{"method":"POST","header":[{"key":"Authorization","value":"Bearer {{accessToken}}"}],"body":{"mode":"raw","raw":"{\"registrationId\":\"{{registrationId}}\",\"razorpayOrderId\":\"order-id\",\"razorpayPaymentId\":\"payment-id\",\"razorpaySignature\":\"signature\"}"},"url":"{{baseUrl}}/api/payments/verify"}}
+    ]},
+    {"name":"Announcements","item":[
+      {"name":"List Announcements","request":{"method":"GET","url":"{{baseUrl}}/api/announcements?page=1&limit=20"}},
+      {"name":"Create Announcement (Admin)","request":{"method":"POST","header":[{"key":"Authorization","value":"Bearer {{adminToken}}"}],"body":{"mode":"raw","raw":"{\"title\":\"Console announcement\",\"message\":\"Created from Postman.\",\"published\":true}"},"url":"{{baseUrl}}/api/announcements"}},
+      {"name":"Update Announcement (Admin)","request":{"method":"PATCH","header":[{"key":"Authorization","value":"Bearer {{adminToken}}"}],"body":{"mode":"raw","raw":"{\"published\":true}"},"url":"{{baseUrl}}/api/announcements/{{announcementId}}"}},
+      {"name":"Delete Announcement (Admin)","request":{"method":"DELETE","header":[{"key":"Authorization","value":"Bearer {{adminToken}}"}],"url":"{{baseUrl}}/api/announcements/{{announcementId}}"}}
+    ]},
+    {"name":"ID Card","item":[{"name":"My ID Card","request":{"method":"GET","header":[{"key":"Authorization","value":"Bearer {{accessToken}}"}],"url":"{{baseUrl}}/api/id-card/me"}}]},
+    {"name":"Security Tests","item":[
+      {"name":"No Token","request":{"method":"GET","url":"{{baseUrl}}/api/registration/me"}},
+      {"name":"Invalid Pagination","request":{"method":"GET","url":"{{baseUrl}}/api/events?limit=1000"}},
+      {"name":"Malformed Event ID","request":{"method":"GET","url":"{{baseUrl}}/api/events/not-an-object-id"}}
+    ]}
+  ]
+}

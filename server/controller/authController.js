@@ -21,7 +21,7 @@ exports.registerUser = async (req, res) => {
 
         const normalizedName = typeof name === "string" ? name.trim() : "";
 
-        if (!normalizedName || !email || !password) {
+        if (!normalizedName || !email || typeof password !== "string" || password.length < 8) {
           return res.status(400).json({
             message: "Name, email, and password are required"
           });
@@ -75,9 +75,10 @@ exports.registerUser = async (req, res) => {
 
         console.error("Registration error:", err);
 
-        res.status(400).json({
-          message: "Error registering user",
-          error: err.message
+        res.status(err.code === 11000 ? 409 : 500).json({
+          success: false,
+          message: err.code === 11000 ? "User already exists" : "Unable to register user",
+          error: err.code === 11000 ? "DUPLICATE_USER" : "INTERNAL_ERROR",
         });
     }
 };
@@ -114,7 +115,7 @@ exports.loginUser = async (req, res) => {
     });
   } catch (err) {
     console.error("Login error:", err);
-    res.status(500).json({ message: "Error logging in", error: err.message });
+    res.status(500).json({ success: false, message: "Unable to log in", error: "INTERNAL_ERROR" });
   }
 };
 
@@ -148,7 +149,7 @@ exports.verifyOTP = async (req, res) => {
     res.status(200).json({ message: "Email verified successfully" });
   } catch (err) {
     console.error("OTP verification error:", err);
-    res.status(500).json({ message: "Error verifying OTP", error: err.message });
+    res.status(500).json({ success: false, message: "Unable to verify OTP", error: "INTERNAL_ERROR" });
   }
 };
 

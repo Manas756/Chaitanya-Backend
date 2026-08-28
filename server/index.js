@@ -20,6 +20,7 @@ dns.setServers(["1.1.1.1","8.8.8.8"])
 
 
 const app = express();
+app.set('trust proxy', 1);
 let databaseReady = false;
 
 app.use(helmet());
@@ -38,15 +39,25 @@ app.get('/health', (req, res) => {
 });
 
 //routesKOKO
-app.use('/api/auth', rateLimit({ windowMs: 15 * 60 * 1000, limit: 100 }), authRoutes);
+const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 100, standardHeaders: 'draft-8', legacyHeaders: false });
+const sensitiveLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 20, standardHeaders: 'draft-8', legacyHeaders: false });
+app.use('/api/auth/login', sensitiveLimiter);
+app.use('/api/auth/register', sensitiveLimiter);
+app.use('/api/auth/verify-otp', sensitiveLimiter);
+app.use('/api/auth/forgot-password', sensitiveLimiter);
+app.use('/api/auth/reset-password', sensitiveLimiter);
+app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/events', eventRoutes);
-app.use('/api/registration', registrationRoutes);
-app.use('/api/payments', paymentRoutes);
+app.use('/api/registration', rateLimit({ windowMs: 15 * 60 * 1000, limit: 100, standardHeaders: 'draft-8', legacyHeaders: false }), registrationRoutes);
+app.use('/api/payments', rateLimit({ windowMs: 15 * 60 * 1000, limit: 30, standardHeaders: 'draft-8', legacyHeaders: false }), paymentRoutes);
 app.use('/api/announcements', announcementRoutes);
 app.use('/api/id-card', idCardRoutes);
+app.use((req, res) => {
+    res.status(404).json({ success: false, message: "Route not found", error: "NOT_FOUND" });
+});
 app.use(errorHandler);
 
-mongoose.connect(process.env.MONGO_URI || process.env.Mongo_URI)
+mongoose.connect(process.env.MONGO_URI)
     .then(async ()=>{
     databaseReady = true;
     await User.syncIndexes();

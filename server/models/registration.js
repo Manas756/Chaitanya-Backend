@@ -13,5 +13,6 @@ const registrationSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 registrationSchema.index({ event: 1, user: 1 }, { unique: true });
+registrationSchema.index({ user: 1, status: 1, createdAt: -1 });
 
 module.exports = mongoose.model("Registration", registrationSchema);

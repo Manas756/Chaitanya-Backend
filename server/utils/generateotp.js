@@ -1,9 +1,10 @@
-// Generates a random numeric OTP of the given length (default 6 digits)
+const crypto = require("crypto");
+
 function generateOTP(length = 6) {
-  const min = Math.pow(10, length - 1);
-  const max = Math.pow(10, length) - 1;
-  const otp = Math.floor(min + Math.random() * (max - min + 1));
-  return otp.toString();
+  if (!Number.isInteger(length) || length < 4 || length > 10) throw new Error("Invalid OTP length");
+  const min = 10 ** (length - 1);
+  const max = 10 ** length;
+  return crypto.randomInt(min, max).toString();
 }
 
 module.exports = generateOTP;
