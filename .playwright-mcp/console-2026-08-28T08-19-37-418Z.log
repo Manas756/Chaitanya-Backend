@@ -1,0 +1,4 @@
+[     563ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/chunk-SVG7M4VJ.js?v=f2e4b8a5:21606
+[     615ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5174/#/login:0
+[     643ms] [ERROR] Access to fetch at 'http://localhost:3000/health' from origin 'http://localhost:5174' has been blocked by CORS policy: The 'Access-Control-Allow-Origin' header has a value 'http://localhost:5173' that is not equal to the supplied origin. Have the server send the header with a valid value. @ http://localhost:5174/#/login:0
+[     644ms] [ERROR] Failed to load resource: net::ERR_FAILED @ http://localhost:3000/health:0

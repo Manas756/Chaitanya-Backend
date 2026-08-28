@@ -1,4 +1,4 @@
-const generateOTP = require("../utils/generateOTP");
+const generateOTP = require("../utils/generateotp");
 const OTP = require("../models/OTP");
 const User = require("../models/user");
 const bcrypt = require("bcryptjs");
@@ -23,7 +23,9 @@ exports.registerUser = async (req, res) => {
 
         if (!normalizedName || !email || typeof password !== "string" || password.length < 8) {
           return res.status(400).json({
-            message: "Name, email, and password are required"
+            success: false,
+            message: "Name, email, and a password of at least 8 characters are required",
+            error: "INVALID_REGISTRATION",
           });
         }
 
@@ -60,12 +62,8 @@ exports.registerUser = async (req, res) => {
 
         await user.save();
 
-        // Send OTP email
-        await sendOTPEmail(
-            email,
-            otp,
-            "complete your registration"
-        );
+        void sendOTPEmail(email, otp, "complete your registration")
+          .catch((error) => console.error("Registration OTP email failed:", error.message));
 
         res.status(201).json({
             message: "Registration successful. OTP sent to your email."
@@ -234,4 +232,26 @@ exports.googleLogin = async (req, res) => {
   const token = createAccessToken(user);
   const session = await createSession(user);
   res.json({ message: "Google login successful", token, refreshToken: session?.refreshToken || null, refreshTokenExpiresIn: session?.ttl || null, role: user.role, isAdmin: user.role === "admin" });
+};
+
+exports.resendOTP = async (req, res) => {
+  const email = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
+  if (!email) return res.status(400).json({ success: false, message: "Email is required", error: "INVALID_EMAIL" });
+
+  const user = await User.findOne({ email }).select("isVerified").lean();
+  if (!user) return res.status(404).json({ success: false, message: "User not found", error: "USER_NOT_FOUND" });
+  if (user.isVerified) return res.status(409).json({ success: false, message: "Email is already verified", error: "ALREADY_VERIFIED" });
+
+  const latest = await OTP.findOne({ email, action: "account_verify" }).sort({ createdAt: -1 }).select("createdAt").lean();
+  if (latest && Date.now() - latest.createdAt.getTime() < 60 * 1000) {
+    return res.status(429).json({ success: false, message: "Please wait 60 seconds before requesting another OTP", error: "OTP_COOLDOWN" });
+  }
+
+  const otp = generateOTP();
+  await OTP.deleteMany({ email, action: "account_verify" });
+  await OTP.create({ email, otp: await bcrypt.hash(otp, 10), action: "account_verify" });
+  void sendOTPEmail(email, otp, "complete your registration")
+    .catch((error) => console.error("Resend OTP email failed:", error.message));
+
+  res.status(202).json({ success: true, message: "A new OTP is being sent to your email" });
 };

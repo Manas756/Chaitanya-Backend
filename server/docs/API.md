@@ -17,6 +17,7 @@ All JSON errors use `{ success: false, message, error }` where implemented. Bear
 | POST | `/api/auth/register` | None | `{ name, email, password }`; password minimum 8 chars | `201 { message }`; `400` validation, `409` duplicate |
 | POST | `/api/auth/login` | None | `{ email, password }` | `200 { message, token, refreshToken, refreshTokenExpiresIn, role, isAdmin }`; `400` credentials, `403` unverified |
 | POST | `/api/auth/verify-otp` | None | `{ email, otp }` | `200 { message }`; `400` invalid/expired OTP, `404` user |
+| POST | `/api/auth/resend-otp` | None | `{ email }` | `202 { success, message }`; `400` invalid email, `404` user, `409` verified, `429` cooldown |
 | POST | `/api/auth/forgot-password` | None | `{ email }` | Always `200 { message }` for account privacy |
 | POST | `/api/auth/reset-password` | None | `{ email, otp, password }`; password minimum 8 chars | `200 { message }`; `400` invalid input/OTP |
 | POST | `/api/auth/logout` | None | `{ refreshToken }` | `200 { message }` |

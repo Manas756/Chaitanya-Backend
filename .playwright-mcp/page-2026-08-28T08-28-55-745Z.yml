@@ -1,0 +1,36 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - link "C CHAITANYA / THE AIM" [ref=e5] [cursor=pointer]:
+      - /url: "#/"
+      - generic [ref=e6]: C
+      - generic [ref=e7]: CHAITANYA / THE AIM
+    - navigation [ref=e8]:
+      - link "Events" [ref=e9] [cursor=pointer]:
+        - /url: "#/events"
+      - link "API Lab" [ref=e10] [cursor=pointer]:
+        - /url: "#/api-testing"
+      - link "Enter" [ref=e11] [cursor=pointer]:
+        - /url: "#/login"
+  - main [ref=e12]:
+    - generic [ref=e67]:
+      - generic [ref=e68]:
+        - paragraph [ref=e69]: CHAITANYA / ACCESS
+        - heading "Join the aim." [level=1] [ref=e70]
+        - paragraph [ref=e71]: Create a working identity.
+      - generic [ref=e73]:
+        - generic [ref=e74]:
+          - generic [ref=e75]: Name
+          - textbox "Name" [ref=e76]: manas
+        - generic [ref=e77]:
+          - generic [ref=e78]: Email
+          - textbox "Email" [ref=e79]: manaskapoor033@gmail.com
+        - generic [ref=e80]:
+          - generic [ref=e81]: Password
+          - textbox "Password" [ref=e82]: manas00
+        - generic [ref=e83]:
+          - generic [ref=e84]: Confirm password
+          - textbox "Confirm password" [ref=e85]: manas00
+        - button "Create account" [ref=e86] [cursor=pointer]
+        - link "Already have an account? Log in" [ref=e90] [cursor=pointer]:
+          - /url: "#/login"
+  - generic [ref=e33]: API CONNECTED

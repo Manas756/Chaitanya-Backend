@@ -20,6 +20,7 @@
     {"name":"Auth","item":[
       {"name":"Register","request":{"method":"POST","header":[{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\"name\":\"Test User\",\"email\":\"your-email@example.com\",\"password\":\"Test@12345\"}"},"url":"{{baseUrl}}/api/auth/register"}},
       {"name":"Verify OTP","request":{"method":"POST","header":[{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\"email\":\"your-email@example.com\",\"otp\":\"{{otp}}\"}"},"url":"{{baseUrl}}/api/auth/verify-otp"}},
+      {"name":"Resend OTP","request":{"method":"POST","header":[{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\"email\":\"your-email@example.com\"}"},"url":"{{baseUrl}}/api/auth/resend-otp"}},
       {"name":"Login","request":{"method":"POST","header":[{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\"email\":\"your-email@example.com\",\"password\":\"Test@12345\"}"},"url":"{{baseUrl}}/api/auth/login"}},
       {"name":"Forgot Password","request":{"method":"POST","body":{"mode":"raw","raw":"{\"email\":\"your-email@example.com\"}"},"url":"{{baseUrl}}/api/auth/forgot-password"}},
       {"name":"Reset Password","request":{"method":"POST","body":{"mode":"raw","raw":"{\"email\":\"your-email@example.com\",\"otp\":\"{{resetOtp}}\",\"password\":\"NewTest@12345\"}"},"url":"{{baseUrl}}/api/auth/reset-password"}},

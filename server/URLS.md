@@ -22,6 +22,7 @@ Frontend URL: `TBD`
 | POST | `/api/auth/register` | No | Register a user and send verification OTP |
 | POST | `/api/auth/login` | No | Verify credentials and return a JWT |
 | POST | `/api/auth/verify-otp` | No | Verify a registration email OTP |
+| POST | `/api/auth/resend-otp` | No | Generate and send a new registration email OTP |
 | POST | `/api/auth/forgot-password` | No | Send a password reset OTP without revealing account existence |
 | POST | `/api/auth/reset-password` | No | Set a new password using a valid reset OTP |
 | POST | `/api/auth/logout` | No | Confirm client-side JWT logout |

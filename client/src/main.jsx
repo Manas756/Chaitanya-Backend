@@ -1,136 +1,51 @@
-import React, { useState } from 'react'
-import { createRoot } from 'react-dom/client'
-import { Activity, ArrowUpRight, CheckCircle2, CircleAlert, ClipboardList, Cloud, KeyRound, LogOut, Megaphone, PlusCircle, RefreshCw, ShieldCheck, Ticket, UserRound, Users, WalletCards } from 'lucide-react'
-import './styles.css'
+import React, { useEffect, useState } from 'react';
+import { createRoot } from 'react-dom/client';
+import { Activity, ArrowUpRight, Check, ChevronRight, CircleAlert, Copy, Database, Gauge, KeyRound, LogIn, LogOut, Mail, Menu, RefreshCw, Search, Send, ShieldCheck, Ticket, UserRound, X } from 'lucide-react';
+import './styles.css';
 
-const groups = [
-  { id: 'health', label: 'Health', icon: Activity },
-  { id: 'auth', label: 'Authentication', icon: KeyRound },
-  { id: 'events', label: 'Events', icon: Ticket },
-  { id: 'registrations', label: 'Registrations', icon: ClipboardList },
-  { id: 'payments', label: 'Payments', icon: WalletCards },
-  { id: 'announcements', label: 'Announcements', icon: Megaphone },
-  { id: 'id-card', label: 'ID card', icon: UserRound },
-]
+const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3000').replace(/\/$/, '');
+const readToken = () => localStorage.getItem('accessToken') || '';
 
-const endpoints = {
-  auth: [
-    ['POST', '/api/auth/register', '{\n  "name": "Test User",\n  "email": "your-email@example.com",\n  "password": "Test@12345"\n}'],
-    ['POST', '/api/auth/verify-otp', '{\n  "email": "your-email@example.com",\n  "otp": "123456"\n}'],
-    ['POST', '/api/auth/login', '{\n  "email": "your-email@example.com",\n  "password": "Test@12345"\n}'],
-    ['POST', '/api/auth/forgot-password', '{\n  "email": "your-email@example.com"\n}'],
-    ['POST', '/api/auth/reset-password', '{\n  "email": "your-email@example.com",\n  "otp": "123456",\n  "password": "NewTest@12345"\n}'],
-    ['POST', '/api/auth/google', '{\n  "idToken": "paste-google-id-token"\n}'],
-    ['POST', '/api/auth/refresh', '{\n  "refreshToken": "stored-refresh-token"\n}'],
-    ['POST', '/api/auth/logout', '{\n  "refreshToken": "stored-refresh-token"\n}'],
-  ],
-  events: [
-    ['GET', '/api/events', ''],
-    ['GET', '/api/events?featured=true', ''],
-    ['GET', '/api/events?category=hackathon', ''],
-    ['GET', '/api/events/:id', ''],
-    ['POST', '/api/events', '{\n  "title": "Console Hackathon",\n  "description": "Test event",\n  "category": "hackathon",\n  "capacity": 50,\n  "fee": 0,\n  "startsAt": "2026-09-01T09:00:00.000Z",\n  "endsAt": "2026-09-01T17:00:00.000Z",\n  "venue": "Main Hall",\n  "status": "published"\n}'],
-    ['PATCH', '/api/events/:id', '{\n  "status": "published"\n}'],
-    ['DELETE', '/api/events/:id', ''],
-  ],
-  registrations: [
-    ['POST', '/api/registration/individual', '{\n  "eventId": "event-object-id"\n}'],
-    ['POST', '/api/registration/team/create', '{\n  "eventId": "event-object-id",\n  "teamName": "Console Team"\n}'],
-    ['POST', '/api/registration/team/join', '{\n  "eventId": "event-object-id",\n  "teamCode": "ABC123"\n}'],
-    ['GET', '/api/registration/me', ''],
-    ['DELETE', '/api/registration/:id', ''],
-  ],
-  payments: [
-    ['POST', '/api/payments/orders', '{\n  "registrationId": "registration-object-id"\n}'],
-    ['POST', '/api/payments/verify', '{\n  "registrationId": "registration-object-id",\n  "razorpayOrderId": "order-id",\n  "razorpayPaymentId": "payment-id",\n  "razorpaySignature": "signature"\n}'],
-  ],
-  announcements: [
-    ['GET', '/api/announcements', ''],
-    ['POST', '/api/announcements', '{\n  "title": "Console announcement",\n  "message": "Created from the API console.",\n  "published": true\n}'],
-    ['PATCH', '/api/announcements/:id', '{\n  "published": true\n}'],
-    ['DELETE', '/api/announcements/:id', ''],
-  ],
-  'id-card': [['GET', '/api/id-card/me', '']],
+async function request(path, options = {}) {
+  const started = performance.now();
+  const response = await fetch(`${API_URL}${path}`, { ...options, headers: { ...(options.body ? { 'Content-Type': 'application/json' } : {}), ...(readToken() ? { Authorization: `Bearer ${readToken()}` } : {}), ...(options.headers || {}) } });
+  const type = response.headers.get('content-type') || '';
+  const data = type.includes('json') ? await response.json() : await response.text();
+  const result = { status: response.status, ms: Math.round(performance.now() - started), data, path };
+  if (!response.ok) throw Object.assign(new Error(data?.message || `Request failed with HTTP ${response.status}`), { result });
+  return result;
 }
+const json = (body) => ({ body: JSON.stringify(body) });
 
 function App() {
-  const [baseUrl, setBaseUrl] = useState(localStorage.getItem('baseUrl') || 'http://localhost:3000')
-  const [accessToken, setAccessToken] = useState(localStorage.getItem('accessToken') || '')
-  const [refreshToken, setRefreshToken] = useState(localStorage.getItem('refreshToken') || '')
-  const [responses, setResponses] = useState({})
-  const [health, setHealth] = useState(null)
-
-  const request = async (key, method, path, body) => {
-    const started = performance.now()
-    const actualPath = path
-    const options = { method, headers: {} }
-    if (accessToken) options.headers.Authorization = `Bearer ${accessToken}`
-    if (body.trim()) {
-      options.headers['Content-Type'] = 'application/json'
-      try { options.body = JSON.stringify(JSON.parse(body)) } catch { setResponses((old) => ({ ...old, [key]: { status: 400, ms: 0, data: { error: 'Request body is not valid JSON.' } } })); return }
-    }
-    try {
-      const response = await fetch(`${baseUrl.replace(/\/$/, '')}${actualPath}`, options)
-      const contentType = response.headers.get('content-type') || ''
-      const data = contentType.includes('json') ? await response.json() : await response.text()
-      if (data?.token) { localStorage.setItem('accessToken', data.token); setAccessToken(data.token) }
-      if (data?.refreshToken) { localStorage.setItem('refreshToken', data.refreshToken); setRefreshToken(data.refreshToken) }
-      const result = { status: response.status, ms: Math.round(performance.now() - started), data }
-      setResponses((old) => ({ ...old, [key]: result }))
-      if (actualPath === '/health') setHealth(data)
-    } catch (error) {
-      setResponses((old) => ({ ...old, [key]: { status: 'ERR', ms: Math.round(performance.now() - started), data: { error: error.message, hint: 'Start the backend and check CORS.' } } }))
-    }
-  }
-
-  const saveBase = (value) => { setBaseUrl(value); localStorage.setItem('baseUrl', value) }
-  const clearSession = () => { localStorage.removeItem('accessToken'); localStorage.removeItem('refreshToken'); setAccessToken(''); setRefreshToken('') }
-  const healthCheck = () => request('health', 'GET', '/health', '')
-
-  return <div className="app-shell">
-    <header className="topbar">
-      <div className="brand-lockup"><div className="brand-mark">CT</div><div><p className="eyebrow">Chaitaniya / verification workspace</p><h1>API Console</h1></div></div>
-      <div className="top-actions"><span className={`health-pill ${health?.status === 'ok' ? 'is-good' : health ? 'is-bad' : ''}`}><span className="status-dot" />{health?.status === 'ok' ? 'Backend healthy' : health ? 'Backend degraded' : 'Not checked'}</span><button className="icon-button" title="Run health check" onClick={healthCheck}><RefreshCw size={16} /></button></div>
-    </header>
-    <div className="workspace">
-      <aside className="sidebar">
-        <div className="connection-block"><label htmlFor="baseUrl">Backend base URL</label><input id="baseUrl" value={baseUrl} onChange={(event) => saveBase(event.target.value)} /></div>
-        <div className="session-card"><div className="session-heading"><ShieldCheck size={16} /><span>Session state</span></div><strong>{accessToken ? 'Authenticated' : 'Signed out'}</strong><p>{refreshToken ? 'Redis refresh session stored' : 'No refresh session stored'}</p>{accessToken && <button className="text-button" onClick={clearSession}><LogOut size={14} /> Clear local session</button>}</div>
-        <nav className="side-nav"><p className="nav-label">API surface</p>{groups.map(({ id, label, icon: Icon }) => <a href={`#${id}`} key={id}><Icon size={16} />{label}<ArrowUpRight size={13} /></a>)}</nav>
-        <div className="sidebar-foot"><Cloud size={15} /><span>MongoDB source of truth<br />Redis session layer</span></div>
-      </aside>
-      <main className="content">
-        <section className="intro"><div><p className="eyebrow coral">Live request runner</p><h2>Check the whole backend.</h2><p>Run each endpoint against your local server. Responses, status codes, timing, and session tokens stay visible in this workspace.</p></div><button className="primary-button" onClick={healthCheck}><Activity size={17} /> Check health</button></section>
-        <section id="health" className="health-section"><div className="section-title"><div><p className="eyebrow">01 / system</p><h2>Health check</h2></div><span className="method-badge get">GET /health</span></div><p className="section-copy">Confirms the server is responding and reports MongoDB and Redis state.</p><EndpointCard endpoint={['GET', '/health', '']} response={responses.health} onRun={(m,p,b) => request('health',m,p,b)} /></section>
-        {Object.entries(endpoints).map(([group, items], index) => <section id={group} key={group}><div className="section-title"><div><p className="eyebrow">{String(index + 2).padStart(2, '0')} / {group.replace('-', ' ')}</p><h2>{group === 'id-card' ? 'Participant ID card' : group[0].toUpperCase() + group.slice(1)}</h2></div><span className="count-label">{items.length} endpoints</span></div>{group === 'registrations' && <TeamRegistrationPanel onRequest={request} />}<div className="endpoint-grid">{items.map((endpoint, itemIndex) => { const key = `${group}-${itemIndex}`; return <EndpointCard key={key} endpoint={endpoint} response={responses[key]} onRun={(m,p,b) => request(key,m,p,b)} /> })}</div></section>)}
-      </main>
-    </div>
-  </div>
+  const [route, setRoute] = useState(window.location.hash.slice(1) || '/');
+  const [health, setHealth] = useState(null);
+  const [logs, setLogs] = useState([]);
+  const [token, setToken] = useState(readToken());
+  useEffect(() => { const onHash = () => setRoute(window.location.hash.slice(1) || '/'); window.addEventListener('hashchange', onHash); return () => window.removeEventListener('hashchange', onHash); }, []);
+  const run = async (path, options) => { try { const result = await request(path, options); setLogs((old) => [{ ...result, ok: true }, ...old].slice(0, 30)); return result; } catch (error) { const result = error.result || { status: 'ERR', ms: 0, data: { message: error.message }, path }; setLogs((old) => [{ ...result, ok: false }, ...old].slice(0, 30)); throw error; } };
+  const checkHealth = async () => { try { const result = await run('/health'); setHealth(result.data); } catch { setHealth({ status: 'offline' }); } };
+  useEffect(() => { checkHealth(); }, []);
+  const logout = async () => { try { await run('/api/auth/logout', json({ refreshToken: localStorage.getItem('refreshToken') })); } catch {} localStorage.clear(); setToken(''); go('/'); };
+  return <div className="app"><header className="topbar"><a className="wordmark" href="#/"><span className="mark">C</span><span>CHAITANYA <small>/ THE AIM</small></span></a><nav><a href="#/events">Events</a><a href="#/api-testing">API Lab</a>{token ? <a href="#/dashboard">Dashboard</a> : <a href="#/login">Enter</a>}</nav><button className="icon-btn mobile-menu" title="Menu"><Menu size={19}/></button></header><main><Router route={route} run={run} token={token} setToken={setToken} logout={logout} health={health} logs={logs} clearLogs={() => setLogs([])} /></main><div className={`api-indicator ${health?.status === 'ok' ? 'online' : ''}`} onClick={checkHealth}><span/> API {health?.status === 'ok' ? 'CONNECTED' : 'OFFLINE'}</div></div>
 }
-
-function TeamRegistrationPanel({ onRequest }) {
-  const [mode, setMode] = useState('create')
-  const [eventId, setEventId] = useState('')
-  const [teamName, setTeamName] = useState('')
-  const [teamCode, setTeamCode] = useState('')
-  const [result, setResult] = useState(null)
-
-  const submit = async (event) => {
-    event.preventDefault()
-    const path = mode === 'create' ? '/api/registration/team/create' : '/api/registration/team/join'
-    const body = mode === 'create' ? { eventId, teamName } : { eventId, teamCode }
-    const response = await onRequest(`guided-${mode}`, 'POST', path, JSON.stringify(body))
-    setResult(response)
-  }
-
-  return <div className="team-panel"><div className="team-panel-head"><div><p className="eyebrow coral">Event registration</p><h3>Choose your team path</h3><p>Team choice happens here, after signup. Create a team and share its code, or join one with a code.</p></div><Users size={28} /></div><div className="choice-tabs"><button className={mode === 'create' ? 'active' : ''} onClick={() => setMode('create')}><PlusCircle size={16} /> Create a team</button><button className={mode === 'join' ? 'active' : ''} onClick={() => setMode('join')}><Users size={16} /> Join a team</button></div><form className="team-form" onSubmit={submit}><label>Event ID<input value={eventId} onChange={(event) => setEventId(event.target.value)} placeholder="Published event MongoDB ID" required /></label>{mode === 'create' ? <label>Team name<input value={teamName} onChange={(event) => setTeamName(event.target.value)} placeholder="e.g. Team Horizon" required /></label> : <label>Team code<input value={teamCode} onChange={(event) => setTeamCode(event.target.value.toUpperCase())} placeholder="e.g. A1B2C3" required /></label>}<button className="team-submit" type="submit">{mode === 'create' ? 'Create team and register' : 'Join team and register'}<ArrowUpRight size={15} /></button></form>{result && <pre className="team-result">{JSON.stringify(result, null, 2)}</pre>}</div>
-}
-
-function EndpointCard({ endpoint, response, onRun }) {
-  const [method, path, initialBody] = endpoint
-  const [actualPath, setActualPath] = useState(path)
-  const [body, setBody] = useState(initialBody)
-  return <article className="endpoint-card"><div className="endpoint-head"><span className={`method-badge ${method.toLowerCase()}`}>{method}</span><input className="path-input" value={actualPath} onChange={(event) => setActualPath(event.target.value)} aria-label={`${method} endpoint path`} /></div>{method !== 'GET' && <textarea value={body} onChange={(event) => setBody(event.target.value)} spellCheck="false" aria-label={`${method} ${path} request body`} />}{actualPath.includes(':id') && <p className="path-note"><CircleAlert size={13} /> Replace `:id` above with a real MongoDB ID.</p>}<button className="run-button" onClick={() => onRun(method, actualPath, body)}>{method === 'GET' ? 'Run request' : 'Send request'}<ArrowUpRight size={15} /></button>{response && <div className="response"><div className="response-meta"><span className={response.status >= 200 && response.status < 300 ? 'response-good' : 'response-bad'}>{response.status >= 200 && response.status < 300 ? <CheckCircle2 size={13} /> : <CircleAlert size={13} />} HTTP {response.status}</span><span>{response.ms} ms</span></div><pre>{typeof response.data === 'string' ? response.data : JSON.stringify(response.data, null, 2)}</pre></div>}</article>
-}
-
-createRoot(document.getElementById('root')).render(<App />)
+function go(path) { window.location.hash = path; }
+function Router({ route, ...props }) { if (route === '/events') return <Events {...props}/>; if (route.startsWith('/events/')) return <EventDetail id={route.split('/')[2]} {...props}/>; if (route === '/login') return <Auth mode="login" {...props}/>; if (route === '/signup') return <Auth mode="signup" {...props}/>; if (route === '/verify-otp') return <Otp {...props}/>; if (route === '/forgot-password') return <Forgot {...props}/>; if (route === '/reset-password') return <Reset {...props}/>; if (route === '/dashboard') return <Dashboard {...props}/>; if (route === '/api-testing') return <ApiLab {...props}/>; return <Home health={props.health} />; }
+function SectionHead({ eyebrow, title, copy }) { return <div className="section-head"><div><p className="eyebrow">{eyebrow}</p><h2>{title}</h2></div>{copy && <p>{copy}</p>}</div>; }
+function Home({ health }) { return <><section className="hero"><div className="hero-kicker"><span>EST. 2026</span><span>COLLEGE TECH FEST</span></div><h1>CHAI<br/><em>TANYA</em></h1><div className="hero-bottom"><p>The aim is not to arrive at the answer.<br/>It is to build the question.</p><a className="circle-link" href="#/events"><ArrowUpRight size={22}/></a></div></section><section className="manifesto"><p className="eyebrow">01 / A living system</p><p className="statement">A gathering for people who turn curiosity into <span>working things.</span></p></section><section className="home-events"><SectionHead eyebrow="02 / On the horizon" title="Upcoming events" copy={health?.status === 'ok' ? 'Live from the Chaitanya backend.' : 'Connect the backend to see live events.'}/><EventStrip/></section><section className="split-band"><div><p className="eyebrow">03 / Enter the lab</p><h2>Every endpoint<br/><i>has a pulse.</i></h2></div><div className="lab-note"><Activity size={18}/><p>Test authentication, events, registration and payments against your running API.</p><a href="#/api-testing">Open API Lab <ArrowUpRight size={16}/></a></div></section><Footer/></> }
+function EventStrip() { const [events, setEvents] = useState([]); const [state, setState] = useState('loading'); useEffect(() => { request('/api/events?page=1&limit=6').then((r) => { setEvents(r.data.data || []); setState('ready'); }).catch(() => setState('error')); }, []); if (state === 'loading') return <div className="empty-state">Loading the live programme...</div>; if (state === 'error') return <div className="empty-state"><CircleAlert size={18}/> Backend unavailable</div>; if (!events.length) return <div className="empty-state">No published events yet. Your next idea can occupy this space.</div>; return <div className="event-strip">{events.map((event, index) => <a className="event-tile" href={`#/events/${event._id}`} key={event._id}><span>0{index + 1}</span><h3>{event.title}</h3><p>{event.category} / {new Date(event.startsAt).toLocaleDateString()}</p><ArrowUpRight size={18}/></a>)}</div> }
+function Events() { const [events, setEvents] = useState([]); const [query, setQuery] = useState(''); const [category, setCategory] = useState(''); const [status, setStatus] = useState('loading'); useEffect(() => { request(`/api/events?page=1&limit=100${category ? `&category=${encodeURIComponent(category)}` : ''}`).then((r) => { setEvents(r.data.data || []); setStatus('ready'); }).catch(() => setStatus('error')); }, [category]); const shown = events.filter((e) => e.title.toLowerCase().includes(query.toLowerCase()) || e.description.toLowerCase().includes(query.toLowerCase())); return <><div className="page-intro"><p className="eyebrow">02 / Programme</p><h1>Make something<br/><i>worth finding.</i></h1><p className="lead">The live Chaitanya programme, pulled from your backend.</p></div><div className="filters"><label><Search size={16}/><input placeholder="Search events" value={query} onChange={(e) => setQuery(e.target.value)}/></label><select value={category} onChange={(e) => setCategory(e.target.value)}><option value="">All categories</option><option value="hackathon">Hackathon</option><option value="workshop">Workshop</option><option value="quiz">Quiz</option></select></div>{status === 'loading' && <div className="empty-state">Fetching events...</div>}{status === 'error' && <div className="empty-state"><CircleAlert/> Could not reach the backend.</div>}{status === 'ready' && <div className="event-grid">{shown.map((event) => <a href={`#/events/${event._id}`} className="event-card" key={event._id}><span className="event-index">{event.category}</span><h2>{event.title}</h2><p>{event.description}</p><footer><span>{new Date(event.startsAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</span><span>{event.venue} <ArrowUpRight size={15}/></span></footer></a>)}</div>}{status === 'ready' && !shown.length && <div className="empty-state">No events match that search.</div>}<Footer/></> }
+function EventDetail({ id }) { const [result, setResult] = useState(); useEffect(() => { request(`/api/events/${id}`).then(setResult).catch((e) => setResult(e.result)); }, [id]); if (!result) return <div className="center-state">Loading event...</div>; if (result.status !== 200) return <div className="center-state"><CircleAlert/> Event not found <a href="#/events">Back to events</a></div>; const event = result.data.data; return <div className="detail"><a className="back-link" href="#/events">← All events</a><p className="eyebrow">{event.category} / {event.venue}</p><h1>{event.title}</h1><p className="detail-copy">{event.description}</p><div className="detail-meta"><div><span>WHEN</span>{new Date(event.startsAt).toLocaleString()}</div><div><span>CAPACITY</span>{event.registrationCount} / {event.capacity}</div><div><span>FEE</span>₹{event.fee}</div></div><div className="detail-columns"><div><h3>Rules</h3><p>{event.rules || 'No rules published yet.'}</p></div><div><h3>Coordinators</h3><p>{event.coordinators?.join(', ') || 'To be announced.'}</p></div></div></div> }
+function Auth({ mode, setToken }) { const signup = mode === 'signup'; const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' }); const [result, setResult] = useState(); const [loading, setLoading] = useState(false); const submit = async (e) => { e.preventDefault(); if (signup && form.password !== form.confirm) return setResult({ status: 400, data: { message: 'Passwords do not match.' } }); setLoading(true); try { const r = await request(`/api/auth/${signup ? 'register' : 'login'}`, json(form)); setResult(r); if (signup) { localStorage.setItem('pendingEmail', form.email); go('/verify-otp'); } else { localStorage.setItem('accessToken', r.data.token); if (r.data.refreshToken) localStorage.setItem('refreshToken', r.data.refreshToken); setToken(r.data.token); go('/dashboard'); } } catch (e) { setResult(e.result || { status: 'ERR', data: { message: e.message || 'Could not reach the backend.' } }); } finally { setLoading(false); } }; const googleLogin = async (idToken) => { setLoading(true); try { const r = await request('/api/auth/google', json({ idToken })); setResult(r); localStorage.setItem('accessToken', r.data.token); if (r.data.refreshToken) localStorage.setItem('refreshToken', r.data.refreshToken); setToken(r.data.token); go('/dashboard'); } catch (e) { setResult(e.result || { status: 'ERR', data: { message: e.message || 'Could not reach the backend.' } }); } finally { setLoading(false); } }; const submitForm = (e) => { if (signup && form.password !== form.confirm) { e.preventDefault(); setResult({ status: 400, data: { message: 'Passwords do not match.' } }); return; } submit(e); }; return <AuthFrame title={signup ? 'Join the aim.' : 'Welcome back.'} subtitle={signup ? 'Create a working identity.' : 'Continue building.'}><form className="form" onSubmit={submitForm} noValidate>{signup && <Field label="Name" value={form.name} onChange={(v) => setForm({ ...form, name: v })}/>}<Field label="Email" type="email" value={form.email} onChange={(v) => setForm({ ...form, email: v })}/><Field label="Password" type="password" value={form.password} onChange={(v) => setForm({ ...form, password: v })}/>{signup && <Field label="Confirm password" type="password" value={form.confirm} onChange={(v) => setForm({ ...form, confirm: v })}/>}<button className="solid-btn" type="submit" disabled={loading}><LogIn size={16}/> {loading ? 'Working...' : signup ? 'Create account' : 'Log in'}</button>{!signup && <><GoogleButton onToken={googleLogin}/><a className="quiet-link" href="#/forgot-password">Forgot password?</a><a className="quiet-link" href="#/signup">Create an account</a></>}{signup && <a className="quiet-link" href="#/login">Already have an account? Log in</a>}{result && <Response result={result}/>}</form></AuthFrame> }
+function GoogleButton({ onToken }) { const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID; const [ready, setReady] = useState(false); useEffect(() => { if (!clientId) return; const timer = setInterval(() => { if (window.google?.accounts?.id) { clearInterval(timer); window.google.accounts.id.initialize({ client_id: clientId, callback: (response) => onToken(response.credential) }); const target = document.getElementById('google-signin'); if (target) { window.google.accounts.id.renderButton(target, { theme: 'outline', size: 'large', width: 430, text: 'signin_with' }); setReady(true); } } }, 100); return () => clearInterval(timer); }, [clientId, onToken]); if (!clientId) return <p className="auth-note">Google sign-in is not configured. Add VITE_GOOGLE_CLIENT_ID to the client environment.</p>; return <div className="google-wrap"><div id="google-signin"/><span>{ready ? 'Google sign-in' : 'Loading Google sign-in...'}</span></div>; }
+function Field({ label, value, onChange, type = 'text', placeholder }) { return <label className="field"><span>{label}</span><input required type={type} placeholder={placeholder} value={value} onChange={(e) => onChange(e.target.value)}/></label> }
+function AuthFrame({ title, subtitle, children }) { return <div className="auth-frame"><div className="auth-aside"><p className="eyebrow">CHAITANYA / ACCESS</p><h1>{title}</h1><p>{subtitle}</p></div><div className="auth-panel">{children}</div></div> }
+function Otp() { return <OtpLike action="verify-otp" title="Check your inbox." button="Verify email" fields={['otp']}/> }
+function Forgot() { return <OtpLike action="forgot-password" title="Reset the route." button="Send reset code" fields={['email']}/> }
+function Reset() { return <OtpLike action="reset-password" title="Set a new direction." button="Reset password" fields={['email', 'otp', 'password']}/> }
+function OtpLike({ action, title, button, fields }) { const [form, setForm] = useState({ email: localStorage.getItem('pendingEmail') || '' }); const [result, setResult] = useState(); const [cooldown, setCooldown] = useState(0); const [loading, setLoading] = useState(false); const submit = async (e) => { e.preventDefault(); setLoading(true); try { const r = await request(`/api/auth/${action}`, json(form)); setResult(r); if (action === 'verify-otp') go('/login'); if (action === 'forgot-password') go('/reset-password'); } catch (e) { setResult(e.result); } finally { setLoading(false); } }; const resend = async () => { setLoading(true); try { const r = await request('/api/auth/resend-otp', json({ email: form.email })); setResult(r); setCooldown(60); } catch (e) { setResult(e.result); } finally { setLoading(false); } }; useEffect(() => { if (!cooldown) return; const timer = setInterval(() => setCooldown((x) => Math.max(0, x - 1)), 1000); return () => clearInterval(timer); }, [cooldown]); return <AuthFrame title={title} subtitle="A small step between idea and entry."><form className="form" onSubmit={submit}>{(action === 'verify-otp' || fields.includes('email')) && <Field label="Email" type="email" value={form.email || ''} onChange={(v) => setForm({ ...form, email: v })}/>} {fields.filter((field) => field !== 'email').map((field) => <Field key={field} label={field === 'otp' ? 'Six digit OTP' : field} type={field === 'password' ? 'password' : 'text'} value={form[field] || ''} onChange={(v) => setForm({ ...form, [field]: v })}/>) }<button className="solid-btn" type="submit" disabled={loading}><Send size={16}/> {loading ? 'Working...' : button}</button>{action === 'verify-otp' && <button type="button" className="outline-btn" disabled={loading || cooldown > 0} onClick={resend}><RefreshCw size={15}/> {cooldown ? `Resend in ${cooldown}s` : 'Resend OTP'}</button>}{result && <Response result={result}/>}</form></AuthFrame> }
+function Response({ result }) { return <div className={`response ${result.status >= 200 && result.status < 300 ? 'success' : 'failure'}`}><strong>{result.status >= 200 && result.status < 300 ? <Check size={14}/> : <X size={14}/>} HTTP {result.status}</strong><pre>{JSON.stringify(result.data, null, 2)}</pre></div> }
+function Dashboard({ logout }) { const [result, setResult] = useState(); useEffect(() => { request('/api/registration/me?page=1&limit=20').then(setResult).catch((e) => setResult(e.result)); }, []); return <><div className="page-intro compact"><p className="eyebrow">Private / Dashboard</p><h1>Your working<br/><i>space.</i></h1><button className="outline-btn" onClick={logout}><LogOut size={15}/> Log out</button></div><section className="dashboard-grid"><div className="dash-panel"><UserRound/><span>Registrations</span><strong>{result?.data?.pagination?.total ?? '—'}</strong><p>Confirmed places in the programme.</p></div><div className="dash-panel"><Ticket/><span>Next action</span><strong>Explore</strong><a href="#/events">Find an event <ChevronRight size={15}/></a></div></section>{result && <div className="wide-response"><Response result={result}/></div>}</> }
+function ApiLab({ logs, clearLogs }) { const [path, setPath] = useState('/api/events?page=1&limit=20'); const [method, setMethod] = useState('GET'); const [body, setBody] = useState(''); const [result, setResult] = useState(); const run = async () => { try { const r = await request(path, { method, ...(method !== 'GET' ? json(JSON.parse(body || '{}')) : {}) }); setResult(r); } catch (e) { setResult(e.result); } }; return <><div className="page-intro compact"><p className="eyebrow">Developer / API Lab</p><h1>See the system<br/><i>think.</i></h1><p className="lead">A live request runner for every backend surface.</p></div><div className="lab"><div className="lab-toolbar"><select value={method} onChange={(e) => setMethod(e.target.value)}><option>GET</option><option>POST</option><option>PATCH</option><option>DELETE</option></select><input value={path} onChange={(e) => setPath(e.target.value)}/><button className="solid-btn" onClick={run}><Send size={15}/> Run</button></div>{method !== 'GET' && <textarea value={body} onChange={(e) => setBody(e.target.value)} placeholder={'{\n  "email": "..."\n}'}/>}<div className="quick-routes"><button onClick={() => { setMethod('GET'); setPath('/health'); }}>Health</button><button onClick={() => { setMethod('GET'); setPath('/api/events?page=1&limit=20'); }}>Events</button><button onClick={() => { setMethod('GET'); setPath('/api/announcements?page=1&limit=20'); }}>Announcements</button><button onClick={() => { setMethod('GET'); setPath('/api/registration/me?page=1&limit=20'); }}>My registrations</button></div>{result && <Response result={result}/>}</div><div className="request-log"><div className="log-head"><span>Request history ({logs.length})</span><button onClick={clearLogs}>Clear</button></div>{logs.map((log, i) => <div className="log-row" key={`${log.path}-${i}`}><span className={log.ok ? 'dot-good' : 'dot-bad'}/><code>{log.path}</code><span>{log.status}</span><span>{log.ms}ms</span></div>)}</div></> }
+function Footer() { return <footer className="site-footer"><span>CHAITANYA / THE AIM</span><span>Build the question.</span><span>© 2026</span></footer> }
+createRoot(document.getElementById('root')).render(<App/>);

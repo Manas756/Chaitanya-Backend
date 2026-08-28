@@ -24,7 +24,8 @@ app.set('trust proxy', 1);
 let databaseReady = false;
 
 app.use(helmet());
-app.use(cors({ origin: process.env.FRONTEND_URL || true }));
+const allowedOrigins = [process.env.FRONTEND_URL, "http://localhost:5173", "http://localhost:5174"].filter(Boolean);
+app.use(cors({ origin: (origin, callback) => callback(null, !origin || !allowedOrigins.length || allowedOrigins.includes(origin)) }));
 app.use(express.json({ limit: '100kb' }));
 
 app.get('/health', (req, res) => {
